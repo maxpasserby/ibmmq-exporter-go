@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"os"
 
+	"ibmmq-exporter-go/collector"
+
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
@@ -13,16 +15,18 @@ import (
 	"github.com/prometheus/common/promlog/flag"
 	"github.com/prometheus/common/version"
 	"github.com/prometheus/exporter-toolkit/web"
-	webflag "github.com/prometheus/exporter-toolkit/web/kingpinflag"
+	"github.com/prometheus/exporter-toolkit/web/kingpinflag"
 	"gopkg.in/alecthomas/kingpin.v2"
-	"ibmmq-exporter-go/collector"
 )
 
 var (
-	webConfig  = webflag.AddFlags(kingpin.CommandLine, ":9975")
-	metricPath = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics.").Default("/metrics").Envar("IBM_MQ_EXPORTER_WEB_TELEMETRY_PATH").String()
-	username   = kingpin.Flag("username", "The username for the user used when querying metrics.").Envar("IBM_USERNAME").Required().String()
-	password   = kingpin.Flag("password", "The password for the user used when querying metrics.").Envar("IBM_PASSWORD").String()
+	webConfig  = kingpinflag.AddFlags(kingpin.CommandLine, ":9975")
+	metricPath = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics.").Default("/metrics").Envar("EXPORTER_WEB_TELEMETRY_PATH").String()
+	// username   = kingpin.Flag("username", "The username for the user used when querying metrics.").Envar("IBM_USERNAME").Required().String()
+	// password   = kingpin.Flag("password", "The password for the user used when querying metrics.").Envar("IBM_PASSWORD").String()
+
+	username = kingpin.Flag("username", "The username for the user used when querying metrics.").Envar("IBM_USERNAME").String()
+	password = kingpin.Flag("password", "The password for the user used when querying metrics.").Envar("IBM_PASSWORD").String()
 )
 
 const (
@@ -49,17 +53,17 @@ func main() {
 	logger := promlog.New(promlogConfig)
 
 	// Construct the collector, using the flags for configuration
-	c := &collector.Config{
+	config := &collector.Config{
 		Username: *username,
 		Password: *password,
 	}
 
-	if err := c.Validate(); err != nil {
-		level.Error(logger).Log("msg", "Configuration is invalid.", "err", err)
-		os.Exit(1)
-	}
+	// if err := c.Validate(); err != nil {
+	// 	level.Error(logger).Log("msg", "Configuration is invalid.", "err", err)
+	// 	os.Exit(1)
+	// }
 
-	col := collector.NewCollector(logger, c)
+	col := collector.NewCollector(logger, config)
 
 	// Register collector with prometheus client library
 	prometheus.MustRegister(version.NewCollector(exporterName))
